@@ -1,6 +1,9 @@
 <?php
 require("./utils.php");
 
+handleArgs($argc, $argv);
+parse();
+
 function handleArgs($argc, $argv) {
     if($argc <= 1)
         return;
@@ -21,10 +24,30 @@ function handleArgs($argc, $argv) {
     }
 }
 
-function main($argc, $argv){
-    handleArgs($argc, $argv);
+function getCode($line) {
+    // ziskam pouze aktivni kod
+    $line = (str_contains($line, "#") ? strstr($line, "#", true) : $line);
+    $line = trim($line);
+
+    $arr = preg_split("/[\s]+/", trim($line), 4, PREG_SPLIT_NO_EMPTY);
+    return $arr;
 }
 
-main($argc, $argv);
+function parse() {
+    // zkontroluji hlavicku zdrojoveho souboru
+    $line = fgets(STDIN);
+    $line = (str_contains($line, "#") ? strstr($line, "#", true) : $line);
+    $line = trim($line);
+
+    if(!$line || (strcmp(strtolower(".ippcode22"), strtolower($line)) != 0)) {
+        fprintf(STDERR, "Zdrojový kód neobsahuje povinnou hlavičku!\n");
+        exit(ERR_HEADER);
+    }
+    // ctu radek po radku
+    while(($line = fgets(STDIN)) != false) {
+        $code = getCode($line);
+    }
+}
+
 ?>
 
