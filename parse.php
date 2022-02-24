@@ -1,10 +1,10 @@
 <?php
 require("./utils.php");
 
-handleArgs($argc, $argv);
+handleScriptArgs($argc, $argv);
 parse();
 
-function handleArgs($argc, $argv) {
+function handleScriptArgs($argc, $argv) {
     if($argc <= 1)
         return;
     // parser dostal parametr
@@ -29,8 +29,7 @@ function getCode($line) {
     $line = (str_contains($line, "#") ? strstr($line, "#", true) : $line);
     $line = trim($line);
 
-    $arr = preg_split("/[\s]+/", trim($line), 4, PREG_SPLIT_NO_EMPTY);
-    return $arr;
+    return preg_split("/[\s]+/", trim($line), 4, PREG_SPLIT_NO_EMPTY);
 }
 
 function parse() {
@@ -45,9 +44,22 @@ function parse() {
     }
     // ctu radek po radku
     while(($line = fgets(STDIN)) != false) {
+        // rozdelim radek na op kod a parametry
         $code = getCode($line);
+        if(empty($code))
+            continue;
+
+        // kontrola operacniho kodu
+        $instrIndex = checkInstr($code[0]);
+        if($instrIndex == ERR_OPP_CODE) {
+            fprintf(STDERR,"Neznámý operační kód: %s\n", $code[0]);
+            exit(ERR_OPP_CODE);
+        }
+
+        // kontrola argumentu op kodu
+
+        // TODO checkOppArgs($instrIndex);
     }
 }
 
 ?>
-
