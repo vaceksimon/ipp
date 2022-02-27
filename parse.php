@@ -32,6 +32,26 @@ function getCode($line) {
     return preg_split("/[\s]+/", trim($line), 4, PREG_SPLIT_NO_EMPTY);
 }
 
+function checkNOArgs($oppIndex, $args) {
+    //echo sizeof($args) . "\n";
+    //echo $oppIndex;
+    //echo (($oppIndex <= Opps::Dprint)  ? "true" : "false") . "\n";
+    //printf("%d\n", Opps::Dprint);
+    if($oppIndex <= Opps::Break)
+        return sizeof($args) != 0;
+    else if($oppIndex <= Opps::Dprint && sizeof($args) != 1)
+        return false;
+    else if($oppIndex <= Opps::Type && sizeof($args) != 2)
+        return false;
+    else if($oppIndex <= Opps::Jumpifneq && sizeof($args) != 3)
+        return false;
+    return true;
+}
+
+function checkParseArgs($opp, $args) {
+    echo $opp == Opps::Defvar;
+}
+
 function parse() {
     // zkontroluji hlavicku zdrojoveho souboru
     $line = fgets(STDIN);
@@ -50,15 +70,20 @@ function parse() {
             continue;
 
         // kontrola operacniho kodu
-        $instrIndex = checkInstr($code[0]);
-        if($instrIndex == ERR_OPP_CODE) {
+        $oppIndex = checkInstr($code[0]);
+        if($oppIndex == ERR_OPP_CODE) {
             fprintf(STDERR,"Neznámý operační kód: %s\n", $code[0]);
             exit(ERR_OPP_CODE);
         }
 
         // kontrola argumentu op kodu
+        $opp = array_shift($code);
+        if(!checkNOArgs($oppIndex, $code)) {
+            fprintf(STDERR, "Špatný počet operandů instrukce: %s\n", $opp);
+            exit(ERR_LEX_SYN);
+        }
+        checkParseArgs($oppIndex, $code);
 
-        // TODO checkOppArgs($instrIndex);
     }
 }
 

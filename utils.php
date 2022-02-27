@@ -9,6 +9,7 @@ const ERR_LEX_SYN = 23;
 const ERR_INTERNAL = 99;
 
 enum Opps {
+    case err;
     // 0 operandu
     case Createframe; case Pushframe; case Popframe; case Return; case Break;
     // 1 operand
