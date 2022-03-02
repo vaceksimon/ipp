@@ -8,34 +8,44 @@ const ERR_OPP_CODE = 22;
 const ERR_LEX_SYN = 23;
 const ERR_INTERNAL = 99;
 
-enum Opps {
-    case err;
-    // 0 operandu
-    case Createframe; case Pushframe; case Popframe; case Return; case Break;
-    // 1 operand
-    case Defvar; case Call; case Pushs; case Pops; case Write; case Label; case Jump; case Exit; case Dprint;
-    // 2 operandy
-    case Move; case Not; case Int2char; case Str2int; case Read; case Strlen; case Type;
-    // 3 operandy
-    case Add; case Sub; case Mul; case Idiv; case Lt; case Gt; case Eq; case And; case Or; case Concat; case Getchar; case Setchar;
-    case Jumpifeq; case Jumpifneq;
+enum ArgType {
+    case None;
+    case Var;
+    case Symb;
+    case Label;
+    case VarType;
+    case VarSymb;
+    case VarSymbSymb;
+    case LabelSymbSymb;
 }
 
-function checkInstr($instString) {
-    $instArray = array(
-        "err",
-        "createframe", "pushframe", "popframe", "return", "break",
-        "defvar", "call", "pushs", "pops", "write", "label", "jump", "exit", "dprint",
-        "move", "not", "int2char", "str2int", "read", "strlen", "type",
-        "add", "sub", "mul", "idiv", "lt", "gt", "eq", "and", "or", "concat", "getchar", "setchar", "jumpifeq", "jumpifneq"
-    );
+$instrArguments= array(
+    "err" => false,
+    "createframe" => ArgType::None, "pushframe" => ArgType::None, "popframe" => ArgType::None, "return" => ArgType::None,
+    "break" => ArgType::None,
 
-    $instString = strtolower($instString);
-    $key = array_search($instString, $instArray);
-    if($key == false)
-        return ERR_OPP_CODE;
-    else
-        return $key;
+    "defvar" => ArgType::Var, "pops" => ArgType::Var,
+
+    "pushs" => ArgType::Symb, "write" => ArgType::Symb, "exit" => ArgType::Symb, "dprint" => ArgType::Symb,
+
+    "call" => ArgType::Label, "label" => ArgType::Label, "jump" => ArgType::Label,
+
+    "read" => ArgType::VarType,
+
+    "move" => ArgType::VarSymb, "not" => ArgType::VarSymb, "int2char" => ArgType::VarSymb, "strlen" => ArgType::VarSymb,
+    "type" => ArgType::VarSymb,
+
+    "str2int" => ArgType::VarSymbSymb, "add" => ArgType::VarSymbSymb, "sub" => ArgType::VarSymbSymb,
+    "mul" => ArgType::VarSymbSymb, "idiv" => ArgType::VarSymbSymb, "lt" => ArgType::VarSymbSymb, "gt" => ArgType::VarSymbSymb,
+    "eq" => ArgType::VarSymbSymb, "and" => ArgType::VarSymbSymb, "or" => ArgType::VarSymbSymb,
+    "concat" => ArgType::VarSymbSymb, "getchar" => ArgType::VarSymbSymb, "setchar" => ArgType::VarSymbSymb,
+
+    "jumpifeq" => ArgType::LabelSymbSymb, "jumpifneq" => ArgType::LabelSymbSymb
+);
+
+function isInstr($instrString) {
+    global $instrArguments;
+    return array_search($instrString, array_keys($instrArguments)) != false;
 }
 
 function writeHelp() {
