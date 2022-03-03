@@ -73,19 +73,35 @@ function checkNOArgs($instruction, $args) {
 }
 
 function checkSymb($arg) {
-
+    if(str_starts_with($arg, "int@-1")) {
+        return preg_match("/^int@-?[0-9]+$/", $arg);
+    }
+    elseif(str_starts_with($arg, "string@")) {
+        if(preg_match("/^string@([^\s#\\/]|\\[0-9][0-9][0-9])*$/", $arg) == 0)
+            return ERR_LEX_SYN;
+        $arg = htmlspecialchars($arg, ENT_QUOTES);
+        //TODO generovat
+    }
+    elseif(str_starts_with($arg, "bool@")) {
+        return (strcmp("bool@true", $arg) || strcmp("bool@false", $arg));
+    }
+    else
+        return strcmp("nil@nil", $arg);
 }
 
 function checkVar($arg) {
-
+    if(preg_match("/^(GF@|TF@|LF@)/", $arg) == 0)
+        return ERR_LEX_SYN;
+    $id = preg_replace("/^(GF@|TF@|LF@)/", "", $arg);
+    return checkLabel($id);
 }
 
 function checkType($arg) {
-    
+    return strcmp("int", $arg) || strcmp("string", $arg) || strcmp("bool", $arg);
 }
 
 function checkLabel($arg) {
-
+    return preg_match("/^[_\-$&%*!?]?[a-zA-Z0-9]+$/", $arg);
 }
 
 function checkParseArgs($instruction, $args) {
@@ -94,43 +110,51 @@ function checkParseArgs($instruction, $args) {
     if($argTypes == ArgType::None)
         return true;
     $counter = 0;
-    while(!sizeof($args)) {
+
+    while(sizeof($args) != 0) {
         switch ($counter) {
-            case 1:
+            case 0:
                 switch($argTypes) {
                     case ArgType::Symb:
-                        checkSymb($args[0]);
+                        if(checkSymb($args[0]) == 0)
+                            return ERR_LEX_SYN;
                         break;
 
                     case ArgType::Label:
                     case ArgType::LabelSymbSymb:
-                        checkLabel($args[0]);
+                        if(checkLabel($args[0]) == 0)
+                            return ERR_LEX_SYN;
                         break;
 
                     default:
-                        checkVar($args[0]);
+                        if(checkVar($args[0]) == 0)
+                            return ERR_LEX_SYN;
                         break;
                 }
                 break;
 
-            case 2:
+            case 1:
                 if($argTypes == ArgType::VarType)
-                    checkType($args[0]);
+                    if(checkType($args[0]) == 0)
+                        return ERR_LEX_SYN;
                 else
-                    checkSymb($args[0]);
+                    if(checkSymb($args[0]) == 0)
+                        return ERR_LEX_SYN;
                     break;
 
-            case 3:
+            case 2:
                 if($argTypes != ArgType::VarSymbSymb || $argTypes != ArgType::LabelSymbSymb)
                     return ERR_LEX_SYN;
                 else {
-                    checkSymb($args[0]);
+                    if(checkSymb($args[0]) == 0)
+                        return ERR_LEX_SYN;
                 }
                 break;
         }
         $counter++;
         array_shift($args);
     }
+    return ERR_OK;
 }
 
 function parse() {
@@ -160,10 +184,13 @@ function parse() {
         // kontrola argumentu op kodu
         $instruction = array_shift($code);
         if(checkNOArgs($instruction, $code) == false) {
-            fprintf(STDERR, "Špatný počet operandů instrukce: %s\n", $instruction);
+            fprintf(STDERR, "Špatný počet argumentů instrukce: %s\n", $instruction);
             exit(ERR_LEX_SYN);
         }
-        checkParseArgs($instruction, $code);
+        if(checkParseArgs($instruction, $code) != ERR_OK) {
+            fprintf(STDERR, "Špatný typ argumentů instrukce: %s\n", $instruction);
+            exit(ERR_LEX_SYN);
+        }
 
     }
 }
