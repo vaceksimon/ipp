@@ -31,19 +31,6 @@ function handleScriptArgs($argc, $argv) {
 }
 
 /**
- * Radek kodu rozdeli po slovech do pole.
- * @param $line string Radek kodu
- * @return array|false|string[]
- */
-function getCode($line) {
-    // ziskam pouze aktivni kod
-    $line = (str_contains($line, "#") ? strstr($line, "#", true) : $line);
-    $line = trim($line);
-
-    return preg_split("/[\s]+/", trim($line), 4, PREG_SPLIT_NO_EMPTY);
-}
-
-/**
  * Zkontroluje, jestli pocet parametru sedi na typ instrukce (staticky).
  * V pripade zmeny v instrukcich je treba funkci upravit.
  * @param $instruction string
@@ -72,107 +59,124 @@ function checkNOArgs($instruction, $args) {
     return false;
 }
 
-function checkSymb($arg) {
-    if(str_starts_with($arg, "int@-1")) {
-        return preg_match("/^int@-?[0-9]+$/", $arg);
+function isSymbOk($arg) {
+    // symbol muze byt i promenna
+    if(isVarOk($arg))
+        return true;
+
+    if(str_starts_with($arg, "int@")) {
+        return preg_match("/^int@-?[0-9]+$/", $arg) == 1;
     }
     elseif(str_starts_with($arg, "string@")) {
-        if(preg_match("/^string@([^\s#\\/]|\\[0-9][0-9][0-9])*$/", $arg) == 0)
-            return ERR_LEX_SYN;
-        $arg = htmlspecialchars($arg, ENT_QUOTES);
-        //TODO generovat
+        return preg_match("/^string@([^\s#\\\]|\\\[0-9][0-9][0-9])*$/", $arg) == 1;
     }
     elseif(str_starts_with($arg, "bool@")) {
-        return (strcmp("bool@true", $arg) || strcmp("bool@false", $arg));
+        return (strcmp("bool@true", $arg) == 0 || strcmp("bool@false", $arg) == 0);
     }
     else
-        return strcmp("nil@nil", $arg);
+        return strcmp("nil@nil", $arg) == 0;
 }
 
-function checkVar($arg) {
+function isVarOk($arg) {
     if(preg_match("/^(GF@|TF@|LF@)/", $arg) == 0)
-        return ERR_LEX_SYN;
+        return false;
     $id = preg_replace("/^(GF@|TF@|LF@)/", "", $arg);
-    return checkLabel($id);
+    return isLabelOk($id);
 }
 
-function checkType($arg) {
-    return strcmp("int", $arg) || strcmp("string", $arg) || strcmp("bool", $arg);
+function isTypeOk($arg) {
+    return strcmp("int", $arg) == 0 || strcmp("string", $arg) == 0 || strcmp("bool", $arg) == 0;
 }
 
-function checkLabel($arg) {
-    return preg_match("/^[_\-$&%*!?]?[a-zA-Z0-9]+$/", $arg);
+function isLabelOk($arg) {
+    return preg_match("/^[_\-$&%*!?]?[a-zA-Z0-9]+$/", $arg) == 1;
 }
 
-function checkParseArgs($instruction, $args) {
+/**
+ * Zkontroluje datove zda parametry odpovidaji instukci.
+ *
+ * @param $instruction string Nazev instrukce
+ * @param $args string[] Pole s parametry instrikce
+ * @return
+ */
+function checkParseArgs(string $instruction, array $args) {
     global $instrArguments;
     $argTypes = $instrArguments[$instruction];
-    if($argTypes == ArgType::None)
+
+    // instukce nema parametry
+    if($argTypes == ArgType::None) {
         return true;
+    }
+    // bude pocitat na jakem parametru se nachazim
     $counter = 0;
 
+    // podle counteru se sdruzi instrukce, ktere maji stejny typ parametru na stejne pozici
     while(sizeof($args) != 0) {
         switch ($counter) {
             case 0:
                 switch($argTypes) {
                     case ArgType::Symb:
-                        if(checkSymb($args[0]) == 0)
-                            return ERR_LEX_SYN;
+                        if(!isSymbOk($args[0]))
+                            return false;
                         break;
 
                     case ArgType::Label:
                     case ArgType::LabelSymbSymb:
-                        if(checkLabel($args[0]) == 0)
-                            return ERR_LEX_SYN;
+                        if(!isLabelOk($args[0]))
+                            return false;
                         break;
 
                     default:
-                        if(checkVar($args[0]) == 0)
-                            return ERR_LEX_SYN;
+                        if(!isVarOk($args[0]))
+                            return false;
                         break;
                 }
                 break;
 
             case 1:
-                if($argTypes == ArgType::VarType)
-                    if(checkType($args[0]) == 0)
-                        return ERR_LEX_SYN;
+                if($argTypes == ArgType::VarType) {
+                    if (!isTypeOk($args[0]))
+                        return false;
+                }
                 else
-                    if(checkSymb($args[0]) == 0)
-                        return ERR_LEX_SYN;
+                    if(!isSymbOk($args[0]))
+                        return false;
                     break;
 
             case 2:
                 if($argTypes != ArgType::VarSymbSymb || $argTypes != ArgType::LabelSymbSymb)
-                    return ERR_LEX_SYN;
+                    return false;
                 else {
-                    if(checkSymb($args[0]) == 0)
-                        return ERR_LEX_SYN;
+                    if(!isSymbOk($args[0]))
+                        return false;
                 }
                 break;
         }
+        // posunu se na dalsi parametr tim, ze odeberu z pole ten prvni
         $counter++;
         array_shift($args);
     }
-    return ERR_OK;
+    return true;
 }
 
 function parse() {
     // zkontroluji hlavicku zdrojoveho souboru
-    $line = fgets(STDIN);
-    $line = (str_contains($line, "#") ? strstr($line, "#", true) : $line);
-    $line = trim($line);
-
-    if(!$line || (strcmp(strtolower(".ippcode22"), strtolower($line)) != 0)) {
+    if(!hasHeader()) {
         fprintf(STDERR, "Zdrojový kód neobsahuje povinnou hlavičku!\n");
         exit(ERR_HEADER);
     }
-    // ctu radek po radku
+
     while(($line = fgets(STDIN)) != false) {
+//        echo $line;
         // rozdelim radek na op kod a parametry
         $code = getCode($line);
-        if(empty($code))
+        if(empty($code)) {
             continue;
+        }
+//        var_dump($code);
+//        foreach($code as $item)
+//            printf("%s,", $item);
+//        echo "\n";
 
         // kontrola instrukce
         $code[0] = strtolower($code[0]);
@@ -187,7 +191,7 @@ function parse() {
             fprintf(STDERR, "Špatný počet argumentů instrukce: %s\n", $instruction);
             exit(ERR_LEX_SYN);
         }
-        if(checkParseArgs($instruction, $code) != ERR_OK) {
+        if(!checkParseArgs($instruction, $code)) {
             fprintf(STDERR, "Špatný typ argumentů instrukce: %s\n", $instruction);
             exit(ERR_LEX_SYN);
         }

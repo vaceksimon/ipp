@@ -43,6 +43,32 @@ $instrArguments= array(
     "jumpifeq" => ArgType::LabelSymbSymb, "jumpifneq" => ArgType::LabelSymbSymb
 );
 
+function removeComments($line) {
+    $line = (str_contains($line, "#") ? strstr($line, "#", true) : $line);
+    $line = trim($line);
+    return $line;
+}
+
+function hasHeader() {
+    while(true) {
+        $line = removeComments(fgets(STDIN));
+        if(empty($line))
+            continue;
+        return strcmp(strtolower(".ippcode22"), strtolower($line)) == 0;
+    }
+}
+
+/**
+ * Radek kodu rozdeli po slovech do pole.
+ * @param $line string Radek kodu
+ * @return array|false|string[]
+ */
+function getCode($line) {
+    // ziskam pouze aktivni kod
+    $line = removeComments($line);
+    return preg_split("/[\s]+/", trim($line), 4, PREG_SPLIT_NO_EMPTY);
+}
+
 function isInstr($instrString) {
     global $instrArguments;
     return array_search($instrString, array_keys($instrArguments)) != false;
