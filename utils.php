@@ -41,7 +41,7 @@ $instrArguments= array(
     "move" => ArgType::VarSymb, "not" => ArgType::VarSymb, "int2char" => ArgType::VarSymb, "strlen" => ArgType::VarSymb,
     "type" => ArgType::VarSymb,
 
-    "str2int" => ArgType::VarSymbSymb, "add" => ArgType::VarSymbSymb, "sub" => ArgType::VarSymbSymb,
+    "stri2int" => ArgType::VarSymbSymb, "add" => ArgType::VarSymbSymb, "sub" => ArgType::VarSymbSymb,
     "mul" => ArgType::VarSymbSymb, "idiv" => ArgType::VarSymbSymb, "lt" => ArgType::VarSymbSymb, "gt" => ArgType::VarSymbSymb,
     "eq" => ArgType::VarSymbSymb, "and" => ArgType::VarSymbSymb, "or" => ArgType::VarSymbSymb,
     "concat" => ArgType::VarSymbSymb, "getchar" => ArgType::VarSymbSymb, "setchar" => ArgType::VarSymbSymb,

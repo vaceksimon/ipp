@@ -1,5 +1,5 @@
 <?php
-require("./utils.php");
+require("/data/soubory/prace/vysoka/2-LS/IPP/ipp/utils.php");
 
 ini_set('display_errors', 'stderr');
 handleScriptArgs($argc, $argv);
@@ -75,7 +75,7 @@ function isSymbOk(string $arg, XMLWriter $xmlWrt): bool
     if(str_starts_with($arg, "int@")) {
         $xmlWrt->writeAttribute("type", "int");
         $xmlWrt->text(preg_replace("/^int@/", "", $arg));
-        return preg_match("/^int@-?[0-9]+$/", $arg) == 1;
+        return preg_match("/^int@[+-]?[0-9]+$/", $arg) == 1;
     }
     elseif(str_starts_with($arg, "string@")) {
         $xmlWrt->writeAttribute("type", "string");
@@ -88,7 +88,7 @@ function isSymbOk(string $arg, XMLWriter $xmlWrt): bool
         return (strcmp("bool@true", $arg) == 0 || strcmp("bool@false", $arg) == 0);
     }
     else{
-        $xmlWrt->writeAttribute("type", "int");
+        $xmlWrt->writeAttribute("type", "nil");
         $xmlWrt->text("nil");
         return strcmp("nil@nil", $arg) == 0;
     }
@@ -110,7 +110,7 @@ function isVarOk(string $arg, XMLWriter $xmlWrt): bool
 
     $id = preg_replace("/^(GF@|TF@|LF@)/", "", $arg);
     // cast za oznacenim ramce je odpovida syntaxi labelu
-    return preg_match("/^[_\-$&%*!?]?[a-zA-Z0-9]+$/", $id) == 1;
+    return preg_match("/^[_\-$&%*!?a-zA-Z][_\-$&%*!?a-zA-Z0-9]*$/", $id) == 1;
 }
 
 /**
@@ -136,7 +136,7 @@ function isLabelOk(string $arg, XMLWriter $xmlWrt): bool
 {
     $xmlWrt->writeAttribute("type", "label");
     $xmlWrt->text($arg);
-    return preg_match("/^[_\-$&%*!?]?[a-zA-Z0-9]+$/", $arg) == 1;
+    return preg_match("/^[_\-$&%*!?a-zA-Z][_\-$&%*!?a-zA-Z0-9]*$/", $arg) == 1;
 }
 
 /**
@@ -193,7 +193,7 @@ function checkParseArgs(string $instruction, array $args, XMLWriter $xmlWrt): bo
                     break;
 
             case 3:
-                if($argTypes != ArgType::VarSymbSymb || $argTypes != ArgType::LabelSymbSymb)
+                if($argTypes != ArgType::VarSymbSymb && $argTypes != ArgType::LabelSymbSymb)
                     return false;
                 else {
                     if(!isSymbOk($args[0], $xmlWrt))
