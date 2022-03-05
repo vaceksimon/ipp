@@ -6,11 +6,11 @@ parse();
 
 /**
  * Zpracuje zadane parametry skriptu.
- * @param $argc
- * @param $argv
+ * @param $argc int Pocet parametru skiptu.
+ * @param $argv array Argumenty skriptu.
  * @return void
  */
-function handleScriptArgs($argc, $argv) {
+function handleScriptArgs(int $argc, array $argv) {
     if($argc <= 1)
         return;
     // parser dostal parametr
@@ -31,13 +31,13 @@ function handleScriptArgs($argc, $argv) {
 }
 
 /**
- * Zkontroluje, jestli pocet parametru sedi na typ instrukce (staticky).
- * V pripade zmeny v instrukcich je treba funkci upravit.
- * @param $instruction string
- * @param $args string[]
- * @return bool zda pocet parametru odpovida dane instrukci
+ * Zkontroluje, jestli pocet parametru sedi na typ instrukce.
+ * @param $instruction string Jmeno instrukce.
+ * @param $args string[] Argumenty instrukce.
+ * @return bool Zda pocet parametru odpovida dane instrukci.
  */
-function checkNOArgs($instruction, $args) {
+function checkNOArgs(string $instruction, array $args): bool
+{
     global $instrArguments;
     switch($instrArguments[$instruction]) {
         case ArgType::None:
@@ -59,7 +59,13 @@ function checkNOArgs($instruction, $args) {
     return false;
 }
 
-function isSymbOk($arg) {
+/**
+ * Kontroluje typ neterminalu <symb>.
+ * @param $arg string Argument dane instrukce.
+ * @return bool Zda je argument typem neterminalu <symb>.
+ */
+function isSymbOk(string $arg): bool
+{
     // symbol muze byt i promenna
     if(isVarOk($arg))
         return true;
@@ -77,29 +83,48 @@ function isSymbOk($arg) {
         return strcmp("nil@nil", $arg) == 0;
 }
 
-function isVarOk($arg) {
+/**
+ * Kontroluje typ neterminalu <var>.
+ * @param $arg string Argument dane instrukce.
+ * @return bool Zda je argument typem neterminalu <var>.
+ */
+function isVarOk(string $arg): bool
+{
     if(preg_match("/^(GF@|TF@|LF@)/", $arg) == 0)
         return false;
     $id = preg_replace("/^(GF@|TF@|LF@)/", "", $arg);
+    // cast za oznacenim ramce je odpovida syntaxi labelu
     return isLabelOk($id);
 }
 
-function isTypeOk($arg) {
+/**
+ * Kontroluje typ neterminalu <type>.
+ * @param $arg string Argument dane instrukce.
+ * @return bool Zda je argument typem neterminalu <type>.
+ */
+function isTypeOk(string $arg): bool
+{
     return strcmp("int", $arg) == 0 || strcmp("string", $arg) == 0 || strcmp("bool", $arg) == 0;
 }
 
-function isLabelOk($arg) {
+/**
+ * Kontroluje typ neterminalu <label>.
+ * @param $arg string Argument dane instrukce.
+ * @return bool Zda je argument typem neterminalu <label>
+ */
+function isLabelOk(string $arg): bool
+{
     return preg_match("/^[_\-$&%*!?]?[a-zA-Z0-9]+$/", $arg) == 1;
 }
 
 /**
- * Zkontroluje datove zda parametry odpovidaji instukci.
- *
+ * Zkontroluje zda typy parametru odpovidaji instukci.
  * @param $instruction string Nazev instrukce
  * @param $args string[] Pole s parametry instrikce
- * @return
+ * @return bool Zda sedi typy argumentu instrukce.
  */
-function checkParseArgs(string $instruction, array $args) {
+function checkParseArgs(string $instruction, array $args): bool
+{
     global $instrArguments;
     $argTypes = $instrArguments[$instruction];
 
@@ -159,6 +184,10 @@ function checkParseArgs(string $instruction, array $args) {
     return true;
 }
 
+/**
+ * Provede lexikalni a syntaktickou analyzu jazyka IPPcode22 ze STDIN a prelozi jej do XML na STDOUT.
+ * @return void
+ */
 function parse() {
     // zkontroluji hlavicku zdrojoveho souboru
     if(!hasHeader()) {
@@ -167,16 +196,11 @@ function parse() {
     }
 
     while(($line = fgets(STDIN)) != false) {
-//        echo $line;
         // rozdelim radek na op kod a parametry
         $code = getCode($line);
         if(empty($code)) {
             continue;
         }
-//        var_dump($code);
-//        foreach($code as $item)
-//            printf("%s,", $item);
-//        echo "\n";
 
         // kontrola instrukce
         $code[0] = strtolower($code[0]);
@@ -185,12 +209,14 @@ function parse() {
             exit(ERR_OPP_CODE);
         }
 
-        // kontrola argumentu op kodu
+        // kontrola poctu argumentu instrukce
         $instruction = array_shift($code);
         if(checkNOArgs($instruction, $code) == false) {
             fprintf(STDERR, "Špatný počet argumentů instrukce: %s\n", $instruction);
             exit(ERR_LEX_SYN);
         }
+
+        // kontrola typu argumentu instrukce
         if(!checkParseArgs($instruction, $code)) {
             fprintf(STDERR, "Špatný typ argumentů instrukce: %s\n", $instruction);
             exit(ERR_LEX_SYN);
