@@ -1,5 +1,5 @@
 <?php
-require("/data/soubory/prace/vysoka/2-LS/IPP/ipp/utils.php");
+require(dirname(__FILE__) . "/utils.php");
 
 ini_set('display_errors', 'stderr');
 handleScriptArgs($argc, $argv);
