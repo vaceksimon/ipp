@@ -269,6 +269,7 @@ function parse() {
     $xmlWrt->endElement();
     $xmlWrt->endDocument();
     echo $xmlWrt->outputMemory();
+    $xmlWrt->flush();
 }
 
 ?>
