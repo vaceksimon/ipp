@@ -46,3 +46,4 @@ class Interpret:
 
 if __name__ == '__main__':
     Interpret.proc_args()
+    
