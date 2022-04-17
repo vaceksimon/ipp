@@ -1,15 +1,19 @@
 import argparse
 import os.path
 import sys
+from typing import Tuple
+import xml.etree.ElementTree as ET
 
 ERR_MISSING_ARG = 10
 ERR_READ_INPUT = 11
+ERR_XML_FORMAT = 31
+ERR_XML_STRUC = 32
+ERR_SRC = 69
 
 
 class Interpret:
-
     @staticmethod
-    def is_file_ok(file_name: str):
+    def is_file_ok(file_name: str) -> bool:
         if file_name is not None:
             if not os.path.exists(file_name):
                 return False
@@ -21,7 +25,7 @@ class Interpret:
         return False
 
     @staticmethod
-    def proc_args():
+    def proc_args() -> Tuple[str, str]:
         parser = argparse.ArgumentParser(
             description='Script loads XML representation of a program and interprets it and generates its output.')
         parser.add_argument('--source', help='input file with XML representation of a source code', type=str,
@@ -34,16 +38,50 @@ class Interpret:
             sys.stderr.write('At least one input file must be specified.\n')
             exit(ERR_MISSING_ARG)
 
-        if args.input is not None and not Interpret.is_file_ok(args.input):
+        if args.source is not None and not Interpret.is_file_ok(args.source):
             sys.stderr.write('Source file either does not exist or is not readable.\n')
             exit(ERR_READ_INPUT)
-        if args.source is not None and not Interpret.is_file_ok(args.source):
+        if args.input is not None and not Interpret.is_file_ok(args.input):
             sys.stderr.write('Source file either does not exist or is not readable.\n')
             exit(ERR_READ_INPUT)
 
         return args.source, args.input
 
+    @staticmethod
+    def get_sorted_xml(source: str) -> ET.ElementTree:
+        source = sys.stdin if source is None else source
+
+        try:
+            tree = ET.parse(source)
+        except ET.ParseError:
+            sys.stderr.write('Source code xml file is not well-formed.\n')
+            exit(ERR_XML_FORMAT)
+
+        root = tree.getroot()
+        if root.tag != 'program' or 'language' not in root.attrib.keys() or 'IPPcode22' not in root.attrib.values() or len(
+                root.keys()) != 1:
+            sys.stderr.write('Source code does not have the root <program language="IPPcode22"> element.\n')
+            exit()
+
+        # sortnu podle order
+        root = tree.getroot()
+        root[:] = sorted(root, key=lambda child: child.get('order'))
+        return tree
+
 
 if __name__ == '__main__':
-    Interpret.proc_args()
-    
+    source, inpt = Interpret.proc_args()
+    tree = Interpret.get_sorted_xml(source)
+
+    for element in tree.iter():
+        print(element.tag, element.items())
+    # parser = ET.parse(source)
+    # print(parser.getroot().find("./instruction[@order='2']").attrib)
+    # for i in range(1, 10):
+    #     instruction = parser.getroot().find("./instruction[@order='%s']" % i)
+    #     if instruction is None:
+    #         continue
+    #     for child in instruction.iter():
+    #         print(child)
+
+        # todo prochazet <instruction> podle order - iterovat v order, dokud nejsem na konci souboru
