@@ -3,6 +3,7 @@ import os.path
 import sys
 from typing import Tuple
 import xml.etree.ElementTree as ET
+import Instruction
 
 ERR_MISSING_ARG = 10
 ERR_READ_INPUT = 11
@@ -12,6 +13,7 @@ ERR_SRC = 69
 
 
 class Interpret:
+
     @staticmethod
     def is_file_ok(file_name: str) -> bool:
         if file_name is not None:
@@ -58,23 +60,40 @@ class Interpret:
             exit(ERR_XML_FORMAT)
 
         root = tree.getroot()
-        if root.tag != 'program' or 'language' not in root.attrib.keys() or 'IPPcode22' not in root.attrib.values() or len(
-                root.keys()) != 1:
+        if root.tag != 'program' or 'language' not in root.attrib.keys() or 'IPPcode22' not in root.attrib.values():
             sys.stderr.write('Source code does not have the root <program language="IPPcode22"> element.\n')
             exit()
 
         # sortnu podle order
         root = tree.getroot()
+        for instruction in root.findall('./'):
+            Instruction.Instruction.is_instruction_valid(instruction)
         root[:] = sorted(root, key=lambda child: child.get('order'))
         return tree
+
+    @staticmethod
+    def get_labels(tree: ET.ElementTree) -> None:
+        instructions = tree.findall('./instruction')
+        oldorder = int(instructions[0].attrib.get('order'))
+
+        labels = {}
+
+        for ins in instructions[1:]:
+            if oldorder == int(ins.get('order')):
+                sys.stderr.write('Instructions with duplicate order value were found: %d\n' % oldorder)
+                exit(ERR_XML_STRUC)
+            oldorder = int(ins.get('order'))
+
+            # if ins.get('opcode') ==
+            # TODO kde se bude kontrolovat instrukce
 
 
 if __name__ == '__main__':
     source, inpt = Interpret.proc_args()
     tree = Interpret.get_sorted_xml(source)
+    Interpret.get_labels(tree)
 
-    for element in tree.iter():
-        print(element.tag, element.items())
+
     # parser = ET.parse(source)
     # print(parser.getroot().find("./instruction[@order='2']").attrib)
     # for i in range(1, 10):
