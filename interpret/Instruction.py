@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import sys
-from interpret import ERR_XML_STRUC
+from errorCodes import ERR_XML_STRUC
+import re
 
 
 class Instruction:
@@ -27,4 +28,22 @@ class Instruction:
             exit(ERR_XML_STRUC)
         if instruction.get('opcode').upper() not in Instruction._valid_Opcodes:
             sys.stderr.write('Instruction does not have valid opcode: %s.\n' % instruction.get('opcode'))
+            exit(ERR_XML_STRUC)
+
+    @staticmethod
+    def is_arg_valid(argument: ET.Element):
+        if not re.search('\Aarg[0-2]\Z', argument.tag):
+            sys.stderr.write('Instructions can contain only arg elements.\n')
+            exit(ERR_XML_STRUC)
+        for attr in argument.findall('./'):
+            sys.stderr.write('Instruction argument cannot contain any subelements.\n')
+            exit(ERR_XML_STRUC)
+        if len(argument.keys()) != 1:
+            sys.stderr.write('Instruction argument must specify only a type.\n')
+            exit(ERR_XML_STRUC)
+        if 'type' not in argument.attrib:
+            sys.stderr.write('Instruction argument must specify a type.\n')
+            exit(ERR_XML_STRUC)
+        if not re.search('int|bool|string|nil|label|type|var', argument.get('type')):
+            sys.stderr.write('Invalid instruction argument type.\n')
             exit(ERR_XML_STRUC)

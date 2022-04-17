@@ -3,13 +3,9 @@ import os.path
 import sys
 from typing import Tuple
 import xml.etree.ElementTree as ET
-import Instruction
-
-ERR_MISSING_ARG = 10
-ERR_READ_INPUT = 11
-ERR_XML_FORMAT = 31
-ERR_XML_STRUC = 32
-ERR_SRC = 69
+import Instruction as ins
+import InstructionLabel as insLa
+from errorCodes import *
 
 
 class Interpret:
@@ -67,32 +63,34 @@ class Interpret:
         # sortnu podle order
         root = tree.getroot()
         for instruction in root.findall('./'):
-            Instruction.Instruction.is_instruction_valid(instruction)
+            ins.Instruction.is_instruction_valid(instruction)
         root[:] = sorted(root, key=lambda child: child.get('order'))
         return tree
 
     @staticmethod
     def get_labels(tree: ET.ElementTree) -> None:
         instructions = tree.findall('./instruction')
-        oldorder = int(instructions[0].attrib.get('order'))
+        oldorder = -1
 
-        labels = {}
-
-        for ins in instructions[1:]:
+        for ins in instructions:
             if oldorder == int(ins.get('order')):
                 sys.stderr.write('Instructions with duplicate order value were found: %d\n' % oldorder)
                 exit(ERR_XML_STRUC)
             oldorder = int(ins.get('order'))
 
-            # if ins.get('opcode') ==
-            # TODO kde se bude kontrolovat instrukce
+            if ins.get('opcode').upper() == 'LABEL':
+                insLa.InstructionLabel.check_instruction(ins)
+                insLa.InstructionLabel.add_label(int(ins.get('order')), ins.find('arg1').text)
+                tree.getroot().remove(ins)
 
 
 if __name__ == '__main__':
     source, inpt = Interpret.proc_args()
     tree = Interpret.get_sorted_xml(source)
     Interpret.get_labels(tree)
-
+    for el in tree.iter():
+        print(el.tag, el.items())
+    print('labels: ', insLa.InstructionLabel.get_labels())
 
     # parser = ET.parse(source)
     # print(parser.getroot().find("./instruction[@order='2']").attrib)
