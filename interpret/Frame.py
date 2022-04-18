@@ -71,7 +71,7 @@ class Frame:
     def get_variables(self):
         return self.__variables
 
-    def find_variable(self, var_name: str):
+    def find_variable(self, var_name: str) -> Var.Variable:
         if var_name not in self.get_variables():
             return None
         else:

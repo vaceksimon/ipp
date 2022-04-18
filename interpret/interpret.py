@@ -135,32 +135,38 @@ if __name__ == '__main__':
     # Fr.Frame.create_frame()
     # print(Fr.Frame.get_tmp().get_variables())
 
-    for instruciton in tree.iter():
-        if instruciton.tag == 'program':
+    min_order = int(tree.find('./instruction').get('order'))
+    max_order = int(tree.findall('./instruction')[-1].get('order'))
+
+    for order in range(min_order, max_order+1):
+        instruction = tree.find('./instruction[@order="%d"]' % order)
+        if instruction is None:
             continue
-        if instruciton.attrib.get('opcode') == 'CREATEFRAME':
-            if len(instruciton.findall('./')) != 0:
+        if instruction.tag == 'program':
+            continue
+        if instruction.attrib.get('opcode') == 'CREATEFRAME':
+            if len(instruction.findall('./')) != 0:
                 sys.stderr.write('Instruction CREATEFRAME cannot have any arguments.\n')
                 exit(ERR_XML_STRUC)
             Fr.Frame.create_frame()
             continue
-        if instruciton.attrib.get('opcode') == 'PUSHFRAME':
-            if len(instruciton.findall('./')) != 0:
+        if instruction.attrib.get('opcode') == 'PUSHFRAME':
+            if len(instruction.findall('./')) != 0:
                 sys.stderr.write('Instruction PUSHFRAME cannot have any arguments.\n')
                 exit(ERR_XML_STRUC)
             Fr.Frame.push_frame()
             continue
-        if instruciton.attrib.get('opcode') == 'POPFRAME':
-            if len(instruciton.findall('./')) != 0:
+        if instruction.attrib.get('opcode') == 'POPFRAME':
+            if len(instruction.findall('./')) != 0:
                 sys.stderr.write('Instruction POPFRAME cannot have any arguments.\n')
                 exit(ERR_XML_STRUC)
             Fr.Frame.pop_frame()
             continue
-        if instruciton.attrib.get('opcode') == 'DEFVAR':
-            if len(instruciton.findall('./')) != 1:
+        if instruction.attrib.get('opcode') == 'DEFVAR':
+            if len(instruction.findall('./')) != 1:
                 sys.stderr.write('Instruction DEFVAR must have one arguments.\n')
                 exit(ERR_XML_STRUC)
-            arg1 = instruciton.find('./arg1')
+            arg1 = instruction.find('./arg1')
             if arg1 is None:
                 sys.stderr.write('DEFVAR must have argument arg1\n')
                 exit(ERR_XML_STRUC)
@@ -171,12 +177,12 @@ if __name__ == '__main__':
             var = Var.Variable(arg1.text)
             var.defvar()
             continue
-        if instruciton.attrib.get('opcode') == 'MOVE':
-            if len(instruciton.findall('./')) != 2:
+        if instruction.attrib.get('opcode') == 'MOVE':
+            if len(instruction.findall('./')) != 2:
                 sys.stderr.write('Instruction MOVE must have two arguments.\n')
                 exit(ERR_XML_STRUC)
-            arg1 = instruciton.find('./arg1')
-            arg2 = instruciton.find('./arg2')
+            arg1 = instruction.find('./arg1')
+            arg2 = instruction.find('./arg2')
             if arg1 is None or arg2 is None:
                 sys.stderr.write('MOVE must have argument arg1 and arg2\n')
                 exit(ERR_XML_STRUC)
@@ -192,7 +198,10 @@ if __name__ == '__main__':
             var = Var.Variable(arg1.text, arg2.text)
             var.move()
             continue
-        print(instruciton)
+        print(instruction)
+
+    test = Fr.Frame.get_global().find_variable('test')
+    print(test.get_name(), test.value, test.typ)
 
     # for i in range(1, 10):
     #     instruction = parser.getroot().find("./instruction[@order='%s']" % i)
