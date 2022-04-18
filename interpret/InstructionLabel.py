@@ -50,7 +50,7 @@ class InstructionLabel(ins.Instruction):
         i = 0
         for arg in instruction.findall('./'):
             # todo error codes
-            ins.Instruction.is_arg_valid(arg)
+            ins.Instruction.check_arg_valid(arg)
             if arg.tag != 'arg1':
                 sys.stderr.write('Instruction label must have only argument arg1.\n')
                 exit(ERR_XML_STRUC)

@@ -82,7 +82,7 @@ class Interpret:
             sys.stderr.write('Source code does not have the root <program language="IPPcode22"> element.\n')
             exit()
 
-        # sortnu podle order
+        # sort by order
         root = tree.getroot()
         for instruction in root.findall('./'):
             Ins.Instruction.is_instruction_valid(instruction)
@@ -117,32 +117,83 @@ if __name__ == '__main__':
     Interpret.get_labels(tree)
 
     Fr.Frame.create_global()
-    print(Fr.Frame.get_global())
 
-    Fr.Frame.create_frame()
-    var = Var.Variable('TF@tmp')
-    var.defvar()
-    var = Var.Variable('TF@tmp', '5')
-    var.move()
-    print(Fr.Frame.get_tmp().get_variables())
-    Fr.Frame.push_frame()
-    var = Var.Variable('LF@tmp', 'as')
-    var.move()
-    print(Fr.Frame.top_local_frame().get_variables())
-    Fr.Frame.pop_frame()
-    var = Var.Variable('TF@tmp', 'true')
-    var.move()
-    print(Fr.Frame.get_tmp().get_variables())
-    Fr.Frame.create_frame()
-    print(Fr.Frame.get_tmp().get_variables())
+    # Fr.Frame.create_frame()
+    # var = Var.Variable('TF@tmp')
+    # var.defvar()
+    # var = Var.Variable('TF@tmp', '5')
+    # var.move()
+    # print(Fr.Frame.get_tmp().get_variables())
+    # Fr.Frame.push_frame()
+    # var = Var.Variable('LF@tmp', 'as')
+    # var.move()
+    # print(Fr.Frame.top_local_frame().get_variables())
+    # Fr.Frame.pop_frame()
+    # var = Var.Variable('TF@tmp', 'true')
+    # var.move()
+    # print(Fr.Frame.get_tmp().get_variables())
+    # Fr.Frame.create_frame()
+    # print(Fr.Frame.get_tmp().get_variables())
 
+    for instruciton in tree.iter():
+        if instruciton.tag == 'program':
+            continue
+        if instruciton.attrib.get('opcode') == 'CREATEFRAME':
+            if len(instruciton.findall('./')) != 0:
+                sys.stderr.write('Instruction CREATEFRAME cannot have any arguments.\n')
+                exit(ERR_XML_STRUC)
+            Fr.Frame.create_frame()
+            continue
+        if instruciton.attrib.get('opcode') == 'PUSHFRAME':
+            if len(instruciton.findall('./')) != 0:
+                sys.stderr.write('Instruction PUSHFRAME cannot have any arguments.\n')
+                exit(ERR_XML_STRUC)
+            Fr.Frame.push_frame()
+            continue
+        if instruciton.attrib.get('opcode') == 'POPFRAME':
+            if len(instruciton.findall('./')) != 0:
+                sys.stderr.write('Instruction POPFRAME cannot have any arguments.\n')
+                exit(ERR_XML_STRUC)
+            Fr.Frame.pop_frame()
+            continue
+        if instruciton.attrib.get('opcode') == 'DEFVAR':
+            if len(instruciton.findall('./')) != 1:
+                sys.stderr.write('Instruction DEFVAR must have one arguments.\n')
+                exit(ERR_XML_STRUC)
+            arg1 = instruciton.find('./arg1')
+            if arg1 is None:
+                sys.stderr.write('DEFVAR must have argument arg1\n')
+                exit(ERR_XML_STRUC)
+            Ins.Instruction.check_arg_valid(arg1)
+            if arg1.get('type') != 'var':
+                sys.stderr.write('DEFVAR must have argument of type var, not: %s\n' % arg1.get('type'))
+                exit(ERR_XML_STRUC)
+            var = Var.Variable(arg1.text)
+            var.defvar()
+            continue
+        if instruciton.attrib.get('opcode') == 'MOVE':
+            if len(instruciton.findall('./')) != 2:
+                sys.stderr.write('Instruction MOVE must have two arguments.\n')
+                exit(ERR_XML_STRUC)
+            arg1 = instruciton.find('./arg1')
+            arg2 = instruciton.find('./arg2')
+            if arg1 is None or arg2 is None:
+                sys.stderr.write('MOVE must have argument arg1 and arg2\n')
+                exit(ERR_XML_STRUC)
+            Ins.Instruction.check_arg_valid(arg1)
+            Ins.Instruction.check_arg_valid(arg2)
+            if arg1.get('type') != 'var':
+                sys.stderr.write('MOVE must have arg1 of type var, not: %s\n' % arg1.get('type'))
+                exit(ERR_XML_STRUC)
+            arg2_type = arg2.get('type')
+            if arg2_type not in ['int', 'bool', 'string', 'nil']:
+                sys.stderr.write('MOVE has invalid arg2 type: %s\n' % arg2_type)
+                exit(ERR_XML_STRUC)
+            var = Var.Variable(arg1.text, arg2.text)
+            var.move()
+            continue
+        print(instruciton)
 
-    # for el in tree.iter():
-    #     print(el.tag, el.items())
-    # print('labels: ', insLa.InstructionLabel.get_labels())
-
-    # parser = ET.parse(source)
-    # print(parser.getroot().find("./instruction[@order='2']").attrib)
     # for i in range(1, 10):
     #     instruction = parser.getroot().find("./instruction[@order='%s']" % i)
     #     if instruction is None:

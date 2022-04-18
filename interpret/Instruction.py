@@ -41,7 +41,7 @@ class Instruction:
             exit(ERR_XML_STRUC)
 
     @staticmethod
-    def is_arg_valid(argument: ET.Element) -> None:
+    def check_arg_valid(argument: ET.Element) -> None:
         """Checks if the instruction argument has all attirbutes and correct values.
 
         If a problem is found, interpret is terminated with a proper error message.
