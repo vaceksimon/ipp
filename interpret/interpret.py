@@ -3,9 +3,10 @@ import os.path
 import sys
 from typing import Tuple
 import xml.etree.ElementTree as ET
-import Instruction as ins
-import InstructionLabel as insLa
-import Frame
+import Instruction as Ins
+import InstructionLabel as InsLa
+import Frame as Fr
+import Variable as Var
 from errorCodes import *
 
 
@@ -84,7 +85,7 @@ class Interpret:
         # sortnu podle order
         root = tree.getroot()
         for instruction in root.findall('./'):
-            ins.Instruction.is_instruction_valid(instruction)
+            Ins.Instruction.is_instruction_valid(instruction)
         root[:] = sorted(root, key=lambda child: child.get('order'))
         return tree
 
@@ -105,8 +106,8 @@ class Interpret:
             oldorder = int(ins.get('order'))
 
             if ins.get('opcode').upper() == 'LABEL':
-                insLa.InstructionLabel.check_instruction(ins)
-                insLa.InstructionLabel.add_label(int(ins.get('order')), ins.find('arg1').text)
+                InsLa.InstructionLabel.check_instruction(ins)
+                InsLa.InstructionLabel.add_label(int(ins.get('order')), ins.find('arg1').text)
                 tree.getroot().remove(ins)
 
 
@@ -115,7 +116,20 @@ if __name__ == '__main__':
     tree = Interpret.get_sorted_xml(source)
     Interpret.get_labels(tree)
 
-    frame = Frame.Frame()
+    Fr.Frame.create_global()
+    print(Fr.Frame.get_global())
+
+    Fr.Frame.create_frame()
+    var = Var.Variable('TF@tmp')
+    var.defvar()
+    print(Fr.Frame.get_tmp().get_variables())
+    Fr.Frame.push_frame()
+    print(Fr.Frame.top_local_frame().get_variables())
+    Fr.Frame.pop_frame()
+    print(Fr.Frame.get_tmp().get_variables())
+    Fr.Frame.create_frame()
+    print(Fr.Frame.get_tmp().get_variables())
+
 
     # for el in tree.iter():
     #     print(el.tag, el.items())
