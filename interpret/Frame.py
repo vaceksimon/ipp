@@ -39,6 +39,12 @@ class Frame:
         return None if top is cls.get_global() else top
 
     @classmethod
+    def check_local_frame(cls):
+        if cls.top_local_frame() is None:
+            sys.stderr.write('There is no local frame on the stack\n')
+            exit(ERR_FRAME)
+
+    @classmethod
     def create_global(cls):
         if len(Frame.__frames) != 0:
             sys.stderr.write('Global frame has already been created.\n')
@@ -56,8 +62,20 @@ class Frame:
     def get_tmp(cls) -> Frame.Frame:
         return cls.__tmp_frame
 
+    @classmethod
+    def check_tmp_frame(cls):
+        if cls.get_tmp() is None:
+            sys.stderr.write('The temporary frame must be first created')
+            exit(ERR_FRAME)
+
     def get_variables(self):
         return self.__variables
+
+    def find_variable(self, var_name: str):
+        if var_name not in self.get_variables():
+            return None
+        else:
+            return  self.__variables[var_name]
 
     def add_variable(self, var: Var.Variable):
         if var.get_name() in self.__variables:
