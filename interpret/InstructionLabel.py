@@ -10,6 +10,7 @@ from errorCodes import ERR_SEMANTICS
 
 
 class InstructionLabel(ins.Instruction):
+    """InstructionLabel has all methods regarding label, including a dictionary of all labels in the program."""
     __labels = {}
 
     def __init__(self):
@@ -18,18 +19,34 @@ class InstructionLabel(ins.Instruction):
 
     @classmethod
     def get_labels(cls) -> Dict:
+        """
+
+        :return: Returns the labels dictionary
+        """
         return cls.__labels
 
     @classmethod
-    def add_label(cls, order: int, lbl: str):
+    def add_label(cls, order: int, lbl: str) -> None:
+        """Adds a label to the dictionary.
+
+        If a label name is not unique, the interpret is terminated.
+
+        :param order: Order value of the label
+        :param lbl: Name of the label
+        :return:
+        """
         if lbl in cls.__labels.values():
             sys.stderr.write('Label: "%s" is already defined.\n' % lbl)
             exit(ERR_OPERAND)
         cls.__labels[order] = lbl
 
     @staticmethod
-    def check_instruction(instruction: ET.Element):
-        # if instruction.items() not '':
+    def check_instruction(instruction: ET.Element) -> None:
+        """Checks, that the instruction has all the attributes and appropriate values.
+
+        :param instruction: An instruction todo
+        :return:
+        """
         i = 0
         for arg in instruction.findall('./'):
             # todo error codes
@@ -48,4 +65,3 @@ class InstructionLabel(ins.Instruction):
         if i != 1:
             sys.stderr.write('Instruction label must have one argument.\n')
             exit(ERR_XML_STRUC)
-

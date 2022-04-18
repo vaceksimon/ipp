@@ -5,6 +5,8 @@ import re
 
 
 class Instruction:
+    """Represents an instruction."""
+
     _valid_Opcodes = (
         'MOVE', 'CREATEFRAME', 'PUSHFRAME', 'POPFRAME', 'DEFVAR', 'CALL', 'RETURN', 'PUSHS', 'POPS', 'ADD', 'SUB',
         'MUL', 'IDIV', 'LT', 'GT', 'EQ', 'AND', 'OR', 'NOT', 'INT2CHAR', 'STRI2INT', 'READ', 'WRITE', 'CONCAT',
@@ -15,12 +17,20 @@ class Instruction:
         self.opcode = opcode
 
     @staticmethod
-    def is_instruction_valid(instruction: ET.Element):
+    def is_instruction_valid(instruction: ET.Element) -> None:
+        """Checks if the instruction has all attirbutes and correct values.
+
+        If a problem is found, interpret is terminated with a proper error message.
+
+        :param instruction: A single instruction from the xml file
+        :return:
+        """
         if 'order' not in instruction.keys() or 'opcode' not in instruction.keys():
             sys.stderr.write('Instruction %s is missing order or opcode argument.\n' % instruction.tag)
             exit(ERR_XML_STRUC)
         if not instruction.get('order').isnumeric():
-            sys.stderr.write('Instruction does not have integer value for attribute order: %s.\n' % instruction.get('order'))
+            sys.stderr.write(
+                'Instruction does not have integer value for attribute order: %s.\n' % instruction.get('order'))
             exit(ERR_XML_STRUC)
         if int(instruction.get('order')) < 0:
             sys.stderr.write(
@@ -31,12 +41,19 @@ class Instruction:
             exit(ERR_XML_STRUC)
 
     @staticmethod
-    def is_arg_valid(argument: ET.Element):
+    def is_arg_valid(argument: ET.Element) -> None:
+        """Checks if the instruction argument has all attirbutes and correct values.
+
+        If a problem is found, interpret is terminated with a proper error message.
+
+        :param argument: Argument of an instruction
+        :return:
+        """
         if not re.search('\Aarg[0-2]\Z', argument.tag):
             sys.stderr.write('Instructions can contain only arg elements.\n')
             exit(ERR_XML_STRUC)
         for attr in argument.findall('./'):
-            sys.stderr.write('Instruction argument cannot contain any subelements.\n')
+            sys.stderr.write('Instruction argument cannot contain any sub-elements.\n')
             exit(ERR_XML_STRUC)
         if len(argument.keys()) != 1:
             sys.stderr.write('Instruction argument must specify only a type.\n')

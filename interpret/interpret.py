@@ -9,9 +9,15 @@ from errorCodes import *
 
 
 class Interpret:
+    """Class contains only static methods."""
 
     @staticmethod
     def is_file_ok(file_name: str) -> bool:
+        """Checks if file exists and is readable.
+
+        :param file_name: Name of the file
+        :return: True if exists and is readable, False otherwise
+        """
         if file_name is not None:
             if not os.path.exists(file_name):
                 return False
@@ -24,6 +30,12 @@ class Interpret:
 
     @staticmethod
     def proc_args() -> Tuple[str, str]:
+        """Handles script arguments and retrieves source and input file.
+
+        Source file contains the source code to be interpreted. Input file contains inputs, which the source code uses.
+
+        :return: Filenames of source and input file
+        """
         parser = argparse.ArgumentParser(
             description='Script loads XML representation of a program and interprets it and generates its output.')
         parser.add_argument('--source', help='input file with XML representation of a source code', type=str,
@@ -47,6 +59,14 @@ class Interpret:
 
     @staticmethod
     def get_sorted_xml(source: str) -> ET.ElementTree:
+        """Sorts and returns the source xml file by order attribute.
+
+        At the same time, this method checks all the child elements in <program> whether they are all instructions and
+        are correctly put.
+
+        :param source: Filename of xml with source code
+        :return: Sorted representation of xml source code
+        """
         source = sys.stdin if source is None else source
 
         try:
@@ -69,6 +89,11 @@ class Interpret:
 
     @staticmethod
     def get_labels(tree: ET.ElementTree) -> None:
+        """Saves all labels inside InstructionLabel dict, checks their syntax and removes them from the xml representation.
+
+        :param tree: XML representation of source code file
+        :return:
+        """
         instructions = tree.findall('./instruction')
         oldorder = -1
 
@@ -101,4 +126,4 @@ if __name__ == '__main__':
     #     for child in instruction.iter():
     #         print(child)
 
-        # todo prochazet <instruction> podle order - iterovat v order, dokud nejsem na konci souboru
+    # todo prochazet <instruction> podle order - iterovat v order, dokud nejsem na konci souboru
