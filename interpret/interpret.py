@@ -5,6 +5,7 @@ from typing import Tuple
 import xml.etree.ElementTree as ET
 import Instruction as ins
 import InstructionLabel as insLa
+import Frame
 from errorCodes import *
 
 
@@ -113,9 +114,12 @@ if __name__ == '__main__':
     source, inpt = Interpret.proc_args()
     tree = Interpret.get_sorted_xml(source)
     Interpret.get_labels(tree)
-    for el in tree.iter():
-        print(el.tag, el.items())
-    print('labels: ', insLa.InstructionLabel.get_labels())
+
+    frame = Frame.Frame()
+
+    # for el in tree.iter():
+    #     print(el.tag, el.items())
+    # print('labels: ', insLa.InstructionLabel.get_labels())
 
     # parser = ET.parse(source)
     # print(parser.getroot().find("./instruction[@order='2']").attrib)
