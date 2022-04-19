@@ -43,6 +43,12 @@ class InstructionLabel(ins.Instruction):
         cls.__labels[lbl] = order
 
     @staticmethod
+    def check_label_name(name: str):
+        if name is None or not re.search('^[_\\-$&%*!?a-zA-Z][_\\-$&%*!?a-zA-Z\d]*$', name):
+            sys.stderr.write('Invalid name for label: %s.\n' % name)
+            exit(ERR_SEMANTICS)
+
+    @staticmethod
     def check_instruction(instruction: ET.Element) -> None:
         """Checks, that the instruction has all the attributes and appropriate values.
 
@@ -59,9 +65,7 @@ class InstructionLabel(ins.Instruction):
             if arg.get('type') != 'label':
                 sys.stderr.write('Label can have argument only of a type label, not: %s\n' % arg.get('type'))
                 exit(ERR_OPERAND)
-            if arg.text is None or not re.search('^[_\\-$&%*!?a-zA-Z][_\\-$&%*!?a-zA-Z\d]*$', arg.text):
-                sys.stderr.write('Invalid name for label: %s.\n' % arg.text)
-                exit(ERR_SEMANTICS)
+            InstructionLabel.check_label_name(arg.text)
             i = i + 1
 
         if i != 1:

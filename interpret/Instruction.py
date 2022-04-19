@@ -23,9 +23,9 @@ class Instruction:
 
     @staticmethod
     def create_arith_ins(opcode: str, arguments: List[ET.Element]):
-        """Creates an instance of an arithmetic instruction and its arguments.
+        """Factory method for an arithmetic instruction and its arguments.
 
-        Performs checks on instruction arguments and stores their value in the object.
+        Performs check on instruction arguments and stores their value in the object.
 
         :param opcode: Name (operation code) of instruction
         :param arguments: List of arguments still in XML representation
@@ -49,11 +49,11 @@ class Instruction:
         if arguments[1].get('type') != arguments[2].get('type'):
             sys.stderr.write('Operands must be the same type\n')
             exit(ERR_OPERAND)
-        if arguments[1].get('type') != 'int':
+        if arguments[1].get('type') not in 'int':
             sys.stderr.write('Operands must be type int\n')
             exit(ERR_OPERAND)
 
-        # Checks the value is (negative) integer
+        # Checks that the value is (negative) integer
         value1 = arguments[1].text
         value2 = arguments[2].text
         if value1[0] == '-':

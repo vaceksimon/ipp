@@ -75,15 +75,19 @@ class Frame:
             exit(ERR_FRAME)
 
     @classmethod
-    def create_global(cls):
-        """Creates a global frame on the frame stack.
+    def create_global(cls) -> Frame:
+        """Creates a global frame on the frame stack and returns it.
 
-        If there already is a global frame, nothing happens.
+        If there already is a global frame it is returned.
 
-        :return:
+        :return: Global frame
         """
         if len(Frame.__frames) == 0:
-            cls.__frames.append(Frame())
+            glbl = Frame()
+            cls.__frames.append(glbl)
+            return glbl
+        else:
+            return cls.get_global()
 
     def is_global(self) -> bool:
         """

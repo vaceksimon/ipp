@@ -265,8 +265,16 @@ if __name__ == '__main__':
                 arith_inst = Ins.Instruction.create_arith_ins(opcode, ET_args)
                 arith_inst.exec_arithmetic_ins()
 
-        else:
-            sys.stderr.write('Unknown instruction: %s\n' % opcode)
-            exit(ERR_XML_STRUC)
-
+        elif opcode == 'JUMP':
+            ET_args = Ins.Instruction.check_args(instruction.findall('./'), 1, opcode)
+            InsLa.InstructionLabel.check_label_name(ET_args[0].text)
+            if ET_args[0].get('type') != 'label':
+                sys.stderr.write('Jump can only have attribute of type label\n')
+                exit(ERR_OPERAND)
+            lbl = InsLa.InstructionLabel.order_for_label_name(ET_args[0].text)
+            if lbl is None:
+                sys.stderr.write('Label %s does not exist.\n' % ET_args[0].text)
+                exit(ERR_OPERAND)
+            else:
+                order = InsLa.InstructionLabel.order_for_label_name(ET_args[0].text)
         order = order + 1
