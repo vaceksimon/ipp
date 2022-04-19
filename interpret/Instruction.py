@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 import sys
 from errorCodes import ERR_XML_STRUC
 import re
+from typing import List
 
 
 class Instruction:
@@ -64,3 +65,15 @@ class Instruction:
         if not re.search('int|bool|string|nil|label|type|var', argument.get('type')):
             sys.stderr.write('Invalid instruction argument type.\n')
             exit(ERR_XML_STRUC)
+
+    @staticmethod
+    def check_args(args: List[ET.Element], arg_count: int, instruction_name: str) -> List[ET.Element]:
+        if len(args) != arg_count:
+            sys.stderr.write('Instruction %s must have %d arguments.\n' % (instruction_name, arg_count))
+            exit(ERR_XML_STRUC)
+        for arg in args:
+            if arg is None:
+                sys.stderr.write('%s must have argument %d arguments\n' % (instruction_name, arg_count))
+                exit(ERR_XML_STRUC)
+            Instruction.check_arg_valid(arg)
+        return args

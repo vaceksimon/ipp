@@ -1,7 +1,7 @@
 import argparse
 import os.path
 import sys
-from typing import Tuple
+from typing import Tuple, List
 import xml.etree.ElementTree as ET
 import Instruction as Ins
 import InstructionLabel as InsLa
@@ -12,6 +12,22 @@ from errorCodes import *
 
 class Interpret:
     """Class contains only static methods."""
+    __call_stack: List[int] = []
+
+    @classmethod
+    def push_call_stack(cls, order: int):
+        cls.__call_stack.append(order)
+
+    @classmethod
+    def is_empty_call_stack(cls) -> bool:
+        return len(cls.__call_stack) == 0
+
+    @classmethod
+    def pop_call_stack(cls) -> int:
+        if cls.is_empty_call_stack():
+            sys.stderr.write('Cannot return - call stack is empty.\n')
+            exit(ERR_INTERPRET)
+        return cls.__call_stack.pop()
 
     @staticmethod
     def is_file_ok(file_name: str) -> bool:
@@ -107,7 +123,7 @@ class Interpret:
 
             if ins.get('opcode').upper() == 'LABEL':
                 InsLa.InstructionLabel.check_instruction(ins)
-                InsLa.InstructionLabel.add_label(int(ins.get('order')), ins.find('arg1').text)
+                InsLa.InstructionLabel.add_label(ins.find('arg1').text, int(ins.get('order')))
                 tree.getroot().remove(ins)
 
 
@@ -134,74 +150,74 @@ if __name__ == '__main__':
     # print(Fr.Frame.get_tmp().get_variables())
     # Fr.Frame.create_frame()
     # print(Fr.Frame.get_tmp().get_variables())
+    print(InsLa.InstructionLabel.get_labels())
 
     min_order = int(tree.find('./instruction').get('order'))
     max_order = int(tree.findall('./instruction')[-1].get('order'))
 
-    for order in range(min_order, max_order+1):
+    order = min_order
+    while order <= max_order:
         instruction = tree.find('./instruction[@order="%d"]' % order)
         if instruction is None:
+            order = order + 1
             continue
         if instruction.tag == 'program':
+            order = order + 1
             continue
-        if instruction.attrib.get('opcode') == 'CREATEFRAME':
-            if len(instruction.findall('./')) != 0:
-                sys.stderr.write('Instruction CREATEFRAME cannot have any arguments.\n')
-                exit(ERR_XML_STRUC)
+
+        opcode = instruction.attrib.get('opcode')
+        if opcode == 'CREATEFRAME':
+            Ins.Instruction.check_args(instruction.findall('./'), 0, 'CREATEFRAME')
             Fr.Frame.create_frame()
-            continue
-        if instruction.attrib.get('opcode') == 'PUSHFRAME':
-            if len(instruction.findall('./')) != 0:
-                sys.stderr.write('Instruction PUSHFRAME cannot have any arguments.\n')
-                exit(ERR_XML_STRUC)
+        elif opcode == 'PUSHFRAME':
+            Ins.Instruction.check_args(instruction.findall('./'), 0, 'PUSHFRAME')
             Fr.Frame.push_frame()
-            continue
-        if instruction.attrib.get('opcode') == 'POPFRAME':
-            if len(instruction.findall('./')) != 0:
-                sys.stderr.write('Instruction POPFRAME cannot have any arguments.\n')
-                exit(ERR_XML_STRUC)
+        elif opcode == 'POPFRAME':
+            Ins.Instruction.check_args(instruction.findall('./'), 0, 'POPFRAME')
             Fr.Frame.pop_frame()
-            continue
-        if instruction.attrib.get('opcode') == 'DEFVAR':
-            if len(instruction.findall('./')) != 1:
-                sys.stderr.write('Instruction DEFVAR must have one arguments.\n')
-                exit(ERR_XML_STRUC)
-            arg1 = instruction.find('./arg1')
-            if arg1 is None:
-                sys.stderr.write('DEFVAR must have argument arg1\n')
-                exit(ERR_XML_STRUC)
-            Ins.Instruction.check_arg_valid(arg1)
-            if arg1.get('type') != 'var':
-                sys.stderr.write('DEFVAR must have argument of type var, not: %s\n' % arg1.get('type'))
-                exit(ERR_XML_STRUC)
-            var = Var.Variable(arg1.text)
+        elif opcode == 'DEFVAR':
+            args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'DEFVAR')
+            if args[0].get('type') != 'var':
+                sys.stderr.write('DEFVAR must have argument of type var, not: %s\n' % args[0].get('type'))
+                exit(ERR_OPERAND)
+            var = Var.Variable(args[0].text)
             var.defvar()
-            continue
-        if instruction.attrib.get('opcode') == 'MOVE':
-            if len(instruction.findall('./')) != 2:
-                sys.stderr.write('Instruction MOVE must have two arguments.\n')
-                exit(ERR_XML_STRUC)
-            arg1 = instruction.find('./arg1')
-            arg2 = instruction.find('./arg2')
-            if arg1 is None or arg2 is None:
-                sys.stderr.write('MOVE must have argument arg1 and arg2\n')
-                exit(ERR_XML_STRUC)
-            Ins.Instruction.check_arg_valid(arg1)
-            Ins.Instruction.check_arg_valid(arg2)
-            if arg1.get('type') != 'var':
-                sys.stderr.write('MOVE must have arg1 of type var, not: %s\n' % arg1.get('type'))
-                exit(ERR_XML_STRUC)
-            arg2_type = arg2.get('type')
+        elif opcode == 'MOVE':
+            args = Ins.Instruction.check_args(instruction.findall('./'), 2, 'MOVE')
+            if args[0].get('type') != 'var':
+                sys.stderr.write('MOVE must have arg1 of type var, not: %s\n' % args[0].get('type'))
+                exit(ERR_OPERAND)
+            arg2_type = args[1].get('type')
             if arg2_type not in ['int', 'bool', 'string', 'nil']:
                 sys.stderr.write('MOVE has invalid arg2 type: %s\n' % arg2_type)
-                exit(ERR_XML_STRUC)
-            var = Var.Variable(arg1.text, arg2.text)
+                exit(ERR_OPERAND)
+            var = Var.Variable(args[0].text, args[1].text)
             var.move()
-            continue
-        print(instruction)
+        elif opcode == 'CALL':
+            args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'CALL')
+            if args[0].get('type') != 'label':
+                sys.stderr.write('CALL must have arg1 of type label, not: %s\n' % args[0].get('type'))
+                exit(ERR_OPERAND)
+            if args[0].text not in InsLa.InstructionLabel.get_labels():
+                sys.stderr.write('Label %s is not defined.\n' % args[0].text)
+                exit(ERR_SEMANTICS)
+            Interpret.push_call_stack(order)
+            order = InsLa.InstructionLabel.order_for_label_name(args[0].text)
+        elif opcode == 'RETURN':
+            Ins.Instruction.check_args(instruction.findall('./'), 0, 'RETURN')
+            if Interpret.is_empty_call_stack():
+                sys.stderr.write('Cannot return - call stack is empty.\n')
+                exit(ERR_RUNTIME)
+            order = Interpret.pop_call_stack()
+        else:
+            sys.stderr.write('Unknown instruction: %s\n' % opcode)
+            exit(ERR_XML_STRUC)
 
-    test = Fr.Frame.get_global().find_variable('test')
-    print(test.get_name(), test.value, test.typ)
+        order = order + 1
+        print(instruction.get('opcode'))
+
+    # test = Fr.Frame.get_global().find_variable('test')
+    # print(test.get_name(), test.value, test.typ)
 
     # for i in range(1, 10):
     #     instruction = parser.getroot().find("./instruction[@order='%s']" % i)
