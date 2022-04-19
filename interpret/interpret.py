@@ -1,7 +1,7 @@
 import argparse
 import os.path
 import sys
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 import xml.etree.ElementTree as ET
 import Instruction as Ins
 import InstructionLabel as InsLa
@@ -126,21 +126,6 @@ class Interpret:
                 InsLa.InstructionLabel.add_label(ins.find('arg1').text, int(ins.get('order')))
                 tree.getroot().remove(ins)
 
-    @staticmethod
-    def check_data_types(typ: str, value: str):
-        if typ == 'nil':
-            if value != 'nil':
-                sys.stderr.write('Type nil can hold only value nil.\n')
-                exit(ERR_INVALID_OPERAND)
-        elif typ == 'int':
-            if not value.isnumeric():
-                sys.stderr.write('Type int can hold only integer values.\n')
-                exit(ERR_INVALID_OPERAND)
-        elif typ == 'bool':
-            if value not in ['true', 'false']:
-                sys.stderr.write('Type bool can hold only values true or false.\n')
-                exit(ERR_INVALID_OPERAND)
-
 
 if __name__ == '__main__':
     source, inpt = Interpret.proc_args()
@@ -190,34 +175,34 @@ if __name__ == '__main__':
             Ins.Instruction.check_args(instruction.findall('./'), 0, 'POPFRAME')
             Fr.Frame.pop_frame()
         elif opcode == 'DEFVAR':
-            args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'DEFVAR')
-            if args[0].get('type') != 'var':
-                sys.stderr.write('DEFVAR must have argument of type var, not: %s\n' % args[0].get('type'))
+            ET_args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'DEFVAR')
+            if ET_args[0].get('type') != 'var':
+                sys.stderr.write('DEFVAR must have argument of type var, not: %s\n' % ET_args[0].get('type'))
                 exit(ERR_OPERAND)
-            var = Var.Variable(args[0].text)
+            var = Var.Variable(ET_args[0].text)
             var.defvar()
         elif opcode == 'MOVE':
-            args = Ins.Instruction.check_args(instruction.findall('./'), 2, 'MOVE')
-            if args[0].get('type') != 'var':
-                sys.stderr.write('MOVE must have arg1 of type var, not: %s\n' % args[0].get('type'))
+            ET_args = Ins.Instruction.check_args(instruction.findall('./'), 2, 'MOVE')
+            if ET_args[0].get('type') != 'var':
+                sys.stderr.write('MOVE must have arg1 of type var, not: %s\n' % ET_args[0].get('type'))
                 exit(ERR_OPERAND)
-            arg2_type = args[1].get('type')
+            arg2_type = ET_args[1].get('type')
             if arg2_type not in ['int', 'bool', 'string', 'nil']:
                 sys.stderr.write('MOVE has invalid arg2 type: %s\n' % arg2_type)
                 exit(ERR_OPERAND)
-            Interpret.check_data_types(arg2_type, args[1].text)
-            var = Var.Variable(args[0].text, args[1].text)
+            Ins.Instruction.check_data_types(arg2_type, ET_args[1].text)
+            var = Var.Variable(ET_args[0].text, ET_args[1].text)
             var.move()
         elif opcode == 'CALL':
-            args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'CALL')
-            if args[0].get('type') != 'label':
-                sys.stderr.write('CALL must have arg1 of type label, not: %s\n' % args[0].get('type'))
+            ET_args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'CALL')
+            if ET_args[0].get('type') != 'label':
+                sys.stderr.write('CALL must have arg1 of type label, not: %s\n' % ET_args[0].get('type'))
                 exit(ERR_OPERAND)
-            if args[0].text not in InsLa.InstructionLabel.get_labels():
-                sys.stderr.write('Label %s is not defined.\n' % args[0].text)
+            if ET_args[0].text not in InsLa.InstructionLabel.get_labels():
+                sys.stderr.write('Label %s is not defined.\n' % ET_args[0].text)
                 exit(ERR_SEMANTICS)
             Interpret.push_call_stack(order)
-            order = InsLa.InstructionLabel.order_for_label_name(args[0].text)
+            order = InsLa.InstructionLabel.order_for_label_name(ET_args[0].text)
         elif opcode == 'RETURN':
             Ins.Instruction.check_args(instruction.findall('./'), 0, 'RETURN')
             if Interpret.is_empty_call_stack():
@@ -225,10 +210,10 @@ if __name__ == '__main__':
                 exit(ERR_MISSING_VALUE)
             order = Interpret.pop_call_stack()
         elif opcode == 'WRITE':
-            args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'WRITE')
-            typ = args[0].get('type')
+            ET_args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'WRITE')
+            typ = ET_args[0].get('type')
             if typ not in ['var', 'int', 'string', 'bool', 'nil']:
-                sys.stderr.write('Invalid type of argument for WRITE: %s\n' % args[0].get('type'))
+                sys.stderr.write('Invalid type of argument for WRITE: %s\n' % ET_args[0].get('type'))
                 exit(ERR_OPERAND)
             if typ == 'var':
                 var = Var.Variable(instruction.find('./arg1').text)
@@ -246,21 +231,42 @@ if __name__ == '__main__':
                     print('')
                 else:
                     print(var.value)
+
             else:
-                Interpret.check_data_types(typ, args[0].text)
+                Ins.Instruction.check_data_types(typ, ET_args[0].text)
                 if typ == 'nil':
                     print('')
                 elif typ == 'int':
-                    print(int(args[0].text))
+                    print(int(ET_args[0].text))
                 elif typ == 'string':
-                    print(args[0].text.decode('escape_string'))
+                    print(ET_args[0].text.decode('escape_string'))
+
         elif opcode in ['ADD', 'SUB', 'MUL', 'IDIV', 'LT', 'GT', 'EQ', 'AND', 'OR']:
+            ET_args = Ins.Instruction.check_args(instruction.findall('./'), 3, opcode)
+            # if ET_args[0].get('type') != 'var':
+            #     sys.stderr.write('%s must have arg1 of type var.\n' % opcode)
+            #     exit(ERR_OPERAND)
+            # if ET_args[1].get('type') not in ['var', 'int', 'bool', 'string', 'nil']:
+            #     sys.stderr.write('%s must have arg2 of type var or a constant, not %s.\n' % (opcode, ET_args[1].get('type')))
+            #     exit(ERR_OPERAND)
+            # if ET_args[2].get('type') not in ['var', 'int', 'bool', 'string', 'nil']:
+            #     sys.stderr.write('%s must have arg2 of type var or a constant, not %s.\n' % (opcode, ET_args[2].get('type')))
+            #     exit(ERR_OPERAND)
+            # args: Dict[str, str]
+            # for arg in ET_args:
+            #     args[arg.get('type')] = arg.text
+            # arith_ins = Ins.Instruction(opcode, args)
+            # arith_ins.arithmetic_ins()
+            arith_inst = Ins.Instruction.create_arith_ins(opcode, ET_args)
+            arith_inst.arithmetic_ins()
 
         else:
             sys.stderr.write('Unknown instruction: %s\n' % opcode)
             exit(ERR_XML_STRUC)
 
         order = order + 1
+
+    # print(Fr.Frame.get_global().get_variables()['test'].value)
         # print(instruction.get('opcode'))
 
     # test = Fr.Frame.get_global().find_variable('test')

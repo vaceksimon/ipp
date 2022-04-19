@@ -4,6 +4,7 @@ import sys
 from typing import Dict
 from errorCodes import *
 
+
 class Frame:
     __frames: Frame = []
     __tmp_frame: Frame = None
