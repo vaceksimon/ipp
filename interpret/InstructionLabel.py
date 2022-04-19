@@ -1,8 +1,7 @@
 import re
-from typing import Dict
 import sys
+from typing import Dict
 import xml.etree.ElementTree as ET
-
 import Instruction as ins
 from errorCodes import *
 
@@ -11,20 +10,21 @@ class InstructionLabel(ins.Instruction):
     """InstructionLabel has all methods regarding label, including a dictionary of all labels in the program."""
     __labels: Dict[str, int] = {}
 
-    def __init__(self):
-        # todo bude se nekdy delat instance?
-        super()
-
     @classmethod
     def get_labels(cls) -> Dict:
         """
 
-        :return: Returns the labels dictionary
+        :return: Returns dictionary of labels
         """
         return cls.__labels
 
     @classmethod
     def order_for_label_name(cls, name_label: str) -> int:
+        """Retrieves order of a label.
+
+        :param name_label: Name of a label
+        :return: Order of a label
+        """
         return cls.__labels[name_label]
 
     @classmethod

@@ -1,3 +1,4 @@
+"""Contains variables with error codes to exit interpret with."""
 ERR_MISSING_ARG = 10
 ERR_READ_INPUT = 11
 ERR_XML_FORMAT = 31

@@ -1,11 +1,12 @@
 import re
 import sys
-from typing import List
 from errorCodes import *
 import Frame as Fr
 
 
 class Variable:
+    """Class representing a variable in a program."""
+
     def __init__(self, name: str, value: str = None):
         self.name = name
         self.value = value
@@ -21,9 +22,19 @@ class Variable:
             self.typ = "string"
 
     def get_name(self) -> str:
+        """
+
+        :return: Name of a variable
+        """
         return self.name
 
     def get_var_ids(self) -> str:
+        """Splits frame id and name of a variable and stores them.
+
+        Name of a variable is stored in the object, while the id of a frame is returned.
+
+        :return: Id (name) of frame
+        """
         var_ids = re.split('@', self.name)
         if len(var_ids) != 2:
             sys.stderr.write('Invalid variable identifier: %s\n' % self.name)
@@ -38,10 +49,20 @@ class Variable:
         return var_ids[0]
 
     def defvar(self):
+        """Adds variable to a frame.
+
+        :return:
+        """
         frame_id = self.get_var_ids()
         Fr.Frame.frame_for_name(frame_id).add_variable(self)
 
     def move(self):
+        """Assigns variable in a frame a value and a type.
+
+        If there is no such variable in a frame, interpret gets terminated.
+
+        :return:
+        """
         frame_id = self.get_var_ids()
         var = Fr.Frame.frame_for_name(frame_id).find_variable(self.get_name())
 
@@ -52,5 +73,8 @@ class Variable:
         var.typ = self.typ
 
     def is_init(self) -> bool:
-        return self.value is not None and self.typ is not None
+        """
 
+        :return: True, if variable initialized (has value and typ assigned)
+        """
+        return self.value is not None and self.typ is not None

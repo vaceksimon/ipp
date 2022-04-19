@@ -1,7 +1,18 @@
+"""
+Interpret of XML representation of a code.
+
+Brno University of Technology
+Faculty of Information Technology
+
+Principles of Programming Languages
+
+Author: Šimon Vacek - xvacek10@stud.fit.vutbr.cz
+
+"""
 import argparse
 import os.path
 import sys
-from typing import Tuple, List, Dict
+from typing import Tuple, List
 import xml.etree.ElementTree as ET
 import Instruction as Ins
 import InstructionLabel as InsLa
@@ -11,19 +22,33 @@ from errorCodes import *
 
 
 class Interpret:
-    """Class contains only static methods."""
+    """Class contains methods regarding checking input files and xml parsing."""
     __call_stack: List[int] = []
+    """Stack for storing instruction order when jump or call instructions are used"""
 
     @classmethod
-    def push_call_stack(cls, order: int):
+    def push_call_stack(cls, order: int) -> None:
+        """Adds value to the top of the stack.
+
+        :param order: Order of jump or call instruction.
+        :return: None
+        """
         cls.__call_stack.append(order)
 
     @classmethod
     def is_empty_call_stack(cls) -> bool:
+        """Finds if the stack is empty.
+
+        :return: True if there is nothing on top of the stack
+        """
         return len(cls.__call_stack) == 0
 
     @classmethod
     def pop_call_stack(cls) -> int:
+        """Removes value from the top of the stack. If the stack is empty script is terminated.
+
+        :return: Order value on top of the stack.
+        """
         if cls.is_empty_call_stack():
             sys.stderr.write('Cannot return - call stack is empty.\n')
             exit(ERR_INTERPRET)
@@ -110,7 +135,7 @@ class Interpret:
         """Saves all labels inside InstructionLabel dict, checks their syntax and removes them from the xml representation.
 
         :param tree: XML representation of source code file
-        :return:
+        :return: None
         """
         instructions = tree.findall('./instruction')
         oldorder = -1
@@ -134,23 +159,6 @@ if __name__ == '__main__':
 
     Fr.Frame.create_global()
 
-    # Fr.Frame.create_frame()
-    # var = Var.Variable('TF@tmp')
-    # var.defvar()
-    # var = Var.Variable('TF@tmp', '5')
-    # var.move()
-    # print(Fr.Frame.get_tmp().get_variables())
-    # Fr.Frame.push_frame()
-    # var = Var.Variable('LF@tmp', 'as')
-    # var.move()
-    # print(Fr.Frame.top_local_frame().get_variables())
-    # Fr.Frame.pop_frame()
-    # var = Var.Variable('TF@tmp', 'true')
-    # var.move()
-    # print(Fr.Frame.get_tmp().get_variables())
-    # Fr.Frame.create_frame()
-    # print(Fr.Frame.get_tmp().get_variables())
-
     min_order = int(tree.find('./instruction').get('order'))
     max_order = int(tree.findall('./instruction')[-1].get('order'))
 
@@ -158,6 +166,7 @@ if __name__ == '__main__':
     while order <= max_order:
         instruction = tree.find('./instruction[@order="%d"]' % order)
         if instruction is None:
+            # instruction of this order is missing
             order = order + 1
             continue
         if instruction.tag == 'program':
@@ -165,15 +174,20 @@ if __name__ == '__main__':
             continue
 
         opcode = instruction.attrib.get('opcode')
+
+        # main body of interpret executing instructions
         if opcode == 'CREATEFRAME':
             Ins.Instruction.check_args(instruction.findall('./'), 0, 'CREATEFRAME')
             Fr.Frame.create_frame()
+
         elif opcode == 'PUSHFRAME':
             Ins.Instruction.check_args(instruction.findall('./'), 0, 'PUSHFRAME')
             Fr.Frame.push_frame()
+
         elif opcode == 'POPFRAME':
             Ins.Instruction.check_args(instruction.findall('./'), 0, 'POPFRAME')
             Fr.Frame.pop_frame()
+
         elif opcode == 'DEFVAR':
             ET_args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'DEFVAR')
             if ET_args[0].get('type') != 'var':
@@ -181,6 +195,7 @@ if __name__ == '__main__':
                 exit(ERR_OPERAND)
             var = Var.Variable(ET_args[0].text)
             var.defvar()
+
         elif opcode == 'MOVE':
             ET_args = Ins.Instruction.check_args(instruction.findall('./'), 2, 'MOVE')
             if ET_args[0].get('type') != 'var':
@@ -193,6 +208,7 @@ if __name__ == '__main__':
             Ins.Instruction.check_data_types(arg2_type, ET_args[1].text)
             var = Var.Variable(ET_args[0].text, ET_args[1].text)
             var.move()
+
         elif opcode == 'CALL':
             ET_args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'CALL')
             if ET_args[0].get('type') != 'label':
@@ -203,12 +219,14 @@ if __name__ == '__main__':
                 exit(ERR_SEMANTICS)
             Interpret.push_call_stack(order)
             order = InsLa.InstructionLabel.order_for_label_name(ET_args[0].text)
+
         elif opcode == 'RETURN':
             Ins.Instruction.check_args(instruction.findall('./'), 0, 'RETURN')
             if Interpret.is_empty_call_stack():
                 sys.stderr.write('Cannot return - call stack is empty.\n')
                 exit(ERR_MISSING_VALUE)
             order = Interpret.pop_call_stack()
+
         elif opcode == 'WRITE':
             ET_args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'WRITE')
             typ = ET_args[0].get('type')
@@ -243,40 +261,12 @@ if __name__ == '__main__':
 
         elif opcode in ['ADD', 'SUB', 'MUL', 'IDIV', 'LT', 'GT', 'EQ', 'AND', 'OR']:
             ET_args = Ins.Instruction.check_args(instruction.findall('./'), 3, opcode)
-            # if ET_args[0].get('type') != 'var':
-            #     sys.stderr.write('%s must have arg1 of type var.\n' % opcode)
-            #     exit(ERR_OPERAND)
-            # if ET_args[1].get('type') not in ['var', 'int', 'bool', 'string', 'nil']:
-            #     sys.stderr.write('%s must have arg2 of type var or a constant, not %s.\n' % (opcode, ET_args[1].get('type')))
-            #     exit(ERR_OPERAND)
-            # if ET_args[2].get('type') not in ['var', 'int', 'bool', 'string', 'nil']:
-            #     sys.stderr.write('%s must have arg2 of type var or a constant, not %s.\n' % (opcode, ET_args[2].get('type')))
-            #     exit(ERR_OPERAND)
-            # args: Dict[str, str]
-            # for arg in ET_args:
-            #     args[arg.get('type')] = arg.text
-            # arith_ins = Ins.Instruction(opcode, args)
-            # arith_ins.arithmetic_ins()
-            arith_inst = Ins.Instruction.create_arith_ins(opcode, ET_args)
-            arith_inst.arithmetic_ins()
+            if opcode in ['ADD', 'SUB', 'MUL', 'IDIV']:
+                arith_inst = Ins.Instruction.create_arith_ins(opcode, ET_args)
+                arith_inst.exec_arithmetic_ins()
 
         else:
             sys.stderr.write('Unknown instruction: %s\n' % opcode)
             exit(ERR_XML_STRUC)
 
         order = order + 1
-
-    # print(Fr.Frame.get_global().get_variables()['test'].value)
-        # print(instruction.get('opcode'))
-
-    # test = Fr.Frame.get_global().find_variable('test')
-    # print(test.get_name(), test.value, test.typ)
-
-    # for i in range(1, 10):
-    #     instruction = parser.getroot().find("./instruction[@order='%s']" % i)
-    #     if instruction is None:
-    #         continue
-    #     for child in instruction.iter():
-    #         print(child)
-
-    # todo prochazet <instruction> podle order - iterovat v order, dokud nejsem na konci souboru
