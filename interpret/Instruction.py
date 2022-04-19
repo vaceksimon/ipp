@@ -71,6 +71,15 @@ class Instruction:
         #     exit(ERR_OPERAND)
         if self._opcode == 'ADD':
             self._args[0].value = int(self._args[1]) + int(self._args[2])
+        elif self._opcode == 'SUB':
+            self._args[0].value = int(self._args[1]) - int(self._args[2])
+        elif self._opcode == 'MUL':
+            self._args[0].value = int(self._args[1]) * int(self._args[2])
+        elif self._opcode == 'IDIV':
+            if self._args[2] == '0':
+                sys.stderr.write('Cannot divide by zero.\n')
+                exit(ERR_INVALID_OPERAND)
+            self._args[0].value = int(self._args[1]) // int(self._args[2])
 
     def logic_ins(self):
         pass
