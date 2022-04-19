@@ -1,8 +1,7 @@
 import re
 import sys
-from errorCodes import ERR_RUNTIME
-from errorCodes import ERR_FRAME
-from errorCodes import ERR_VARIABLE
+from typing import List
+from errorCodes import *
 import Frame as Fr
 
 
@@ -24,47 +23,34 @@ class Variable:
     def get_name(self) -> str:
         return self.name
 
-    def defvar(self):
+    def get_var_ids(self) -> str:
         var_ids = re.split('@', self.name)
         if len(var_ids) != 2:
-            sys.stderr.write('Invalid variable identifier in DEFVAR: %s\n' % self.name)
-            exit(ERR_RUNTIME)
+            sys.stderr.write('Invalid variable identifier: %s\n' % self.name)
+            exit(ERR_MISSING_VALUE)
         if not re.match('^[GLT]F$', var_ids[0]):
-            sys.stderr.write('Invalid frame identifier in DEFVAR: %s.\n' % var_ids[0])
-            exit(ERR_RUNTIME)
+            sys.stderr.write('Invalid frame identifier: %s.\n' % var_ids[0])
+            exit(ERR_MISSING_VALUE)
         if not re.search('^[_\\-$&%*!?a-zA-Z][_\\-$&%*!?a-zA-Z\d]*$', var_ids[1]):
-            sys.stderr.write('Invalid variable identifier in DEFVAR: %s\n' % self.name)
-            exit(ERR_RUNTIME)
-
+            sys.stderr.write('Invalid variable identifier: %s\n' % self.name)
+            exit(ERR_MISSING_VALUE)
         self.name = var_ids[1]
-        if var_ids[0] == 'GF':
-            Fr.Frame.get_global().add_variable(self)
-        elif var_ids[0] == 'LF':
-            Fr.Frame.check_local_frame()
-            Fr.Frame.top_local_frame().add_variable(self)
-        else:
-            Fr.Frame.check_tmp_frame()
-            Fr.Frame.get_tmp().add_variable(self)
+        return var_ids[0]
+
+    def defvar(self):
+        frame_id = self.get_var_ids()
+        Fr.Frame.frame_for_name(frame_id).add_variable(self)
 
     def move(self):
-        var_ids = re.split('@', self.name)
-        if len(var_ids) != 2:
-            sys.stderr.write('Invalid variable identifier in MOVE: %s\n' % self.name)
-            exit(ERR_RUNTIME)
-        if not re.match('^[GLT]F$', var_ids[0]):
-            sys.stderr.write('Invalid frame identifier in MOVE: %s.\n' % var_ids[0])
-            exit(ERR_RUNTIME)
-        self.name = var_ids[1]
-        if var_ids[0] == 'GF':
-            var = Fr.Frame.get_global().find_variable(self.get_name())
-        elif var_ids[0] == 'TF':
-            var = Fr.Frame.get_tmp().find_variable(self.get_name())
-        else:
-            var = Fr.Frame.top_local_frame().find_variable(self.get_name())
+        frame_id = self.get_var_ids()
+        var = Fr.Frame.frame_for_name(frame_id).find_variable(self.get_name())
 
         if var is None:
-            sys.stderr.write('There is no variable %s.\n' % self.get_name())
+            sys.stderr.write('There is no variable %s%s.\n' % (frame_id, self.get_name()))
             exit(ERR_VARIABLE)
         var.value = self.value
         var.typ = self.typ
+
+    def is_init(self) -> bool:
+        return self.value is not None and self.typ is not None
 

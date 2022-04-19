@@ -4,9 +4,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 import Instruction as ins
-from errorCodes import ERR_OPERAND
-from errorCodes import ERR_XML_STRUC
-from errorCodes import ERR_SEMANTICS
+from errorCodes import *
 
 
 class InstructionLabel(ins.Instruction):

@@ -2,10 +2,7 @@ import Frame
 import Variable as Var
 import sys
 from typing import Dict
-from errorCodes import ERR_FRAME
-from errorCodes import ERR_INTERPRET
-from errorCodes import ERR_SEMANTICS
-
+from errorCodes import *
 
 class Frame:
     __frames: Frame = []
@@ -55,6 +52,17 @@ class Frame:
         return Frame.__frames.index(self) == 0
 
     @classmethod
+    def frame_for_name(cls, frame_name: str):
+        if frame_name == 'GF':
+            return cls.get_global()
+        elif frame_name == 'TF':
+            cls.check_tmp_frame()
+            return cls.get_tmp()
+        else:
+            cls.check_local_frame()
+            return cls.top_local_frame()
+
+    @classmethod
     def get_global(cls) -> Frame.Frame:
         return cls.__frames[0]
 
@@ -75,7 +83,7 @@ class Frame:
         if var_name not in self.get_variables():
             return None
         else:
-            return  self.__variables[var_name]
+            return self.__variables[var_name]
 
     def add_variable(self, var: Var.Variable):
         if var.get_name() in self.__variables:

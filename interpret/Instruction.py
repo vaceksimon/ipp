@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 import sys
-from errorCodes import ERR_XML_STRUC
+from errorCodes import *
 import re
 from typing import List
 

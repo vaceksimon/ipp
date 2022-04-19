@@ -102,7 +102,7 @@ class Interpret:
         root = tree.getroot()
         for instruction in root.findall('./'):
             Ins.Instruction.is_instruction_valid(instruction)
-        root[:] = sorted(root, key=lambda child: child.get('order'))
+        root[:] = sorted(root, key=lambda child: int(child.get('order')))
         return tree
 
     @staticmethod
@@ -125,6 +125,21 @@ class Interpret:
                 InsLa.InstructionLabel.check_instruction(ins)
                 InsLa.InstructionLabel.add_label(ins.find('arg1').text, int(ins.get('order')))
                 tree.getroot().remove(ins)
+
+    @staticmethod
+    def check_data_types(typ: str, value: str):
+        if typ == 'nil':
+            if value != 'nil':
+                sys.stderr.write('Type nil can hold only value nil.\n')
+                exit(ERR_INVALID_OPERAND)
+        elif typ == 'int':
+            if not value.isnumeric():
+                sys.stderr.write('Type int can hold only integer values.\n')
+                exit(ERR_INVALID_OPERAND)
+        elif typ == 'bool':
+            if value not in ['true', 'false']:
+                sys.stderr.write('Type bool can hold only values true or false.\n')
+                exit(ERR_INVALID_OPERAND)
 
 
 if __name__ == '__main__':
@@ -150,7 +165,6 @@ if __name__ == '__main__':
     # print(Fr.Frame.get_tmp().get_variables())
     # Fr.Frame.create_frame()
     # print(Fr.Frame.get_tmp().get_variables())
-    print(InsLa.InstructionLabel.get_labels())
 
     min_order = int(tree.find('./instruction').get('order'))
     max_order = int(tree.findall('./instruction')[-1].get('order'))
@@ -191,6 +205,7 @@ if __name__ == '__main__':
             if arg2_type not in ['int', 'bool', 'string', 'nil']:
                 sys.stderr.write('MOVE has invalid arg2 type: %s\n' % arg2_type)
                 exit(ERR_OPERAND)
+            Interpret.check_data_types(arg2_type, args[1].text)
             var = Var.Variable(args[0].text, args[1].text)
             var.move()
         elif opcode == 'CALL':
@@ -207,14 +222,46 @@ if __name__ == '__main__':
             Ins.Instruction.check_args(instruction.findall('./'), 0, 'RETURN')
             if Interpret.is_empty_call_stack():
                 sys.stderr.write('Cannot return - call stack is empty.\n')
-                exit(ERR_RUNTIME)
+                exit(ERR_MISSING_VALUE)
             order = Interpret.pop_call_stack()
+        elif opcode == 'WRITE':
+            args = Ins.Instruction.check_args(instruction.findall('./'), 1, 'WRITE')
+            typ = args[0].get('type')
+            if typ not in ['var', 'int', 'string', 'bool', 'nil']:
+                sys.stderr.write('Invalid type of argument for WRITE: %s\n' % args[0].get('type'))
+                exit(ERR_OPERAND)
+            if typ == 'var':
+                var = Var.Variable(instruction.find('./arg1').text)
+                var_frame = var.get_var_ids()
+                var_name = var.get_name()
+                var = Fr.Frame.frame_for_name(var_frame).find_variable(var_name)
+
+                if var is None:
+                    sys.stderr.write('Cannot WRITE variable: %s@%s. It does not exist.\n' % (var_frame, var_name))
+                    exit(ERR_VARIABLE)
+                if not var.is_init():
+                    sys.stderr.write('Cannot WRITE variable: %s@%s. It is not initialized.\n' % (var_frame, var_name))
+                    exit(ERR_MISSING_VALUE)
+                if var.typ == 'nil':
+                    print('')
+                else:
+                    print(var.value)
+            else:
+                Interpret.check_data_types(typ, args[0].text)
+                if typ == 'nil':
+                    print('')
+                elif typ == 'int':
+                    print(int(args[0].text))
+                elif typ == 'string':
+                    print(args[0].text.decode('escape_string'))
+        elif opcode in ['ADD', 'SUB', 'MUL', 'IDIV', 'LT', 'GT', 'EQ', 'AND', 'OR']:
+
         else:
             sys.stderr.write('Unknown instruction: %s\n' % opcode)
             exit(ERR_XML_STRUC)
 
         order = order + 1
-        print(instruction.get('opcode'))
+        # print(instruction.get('opcode'))
 
     # test = Fr.Frame.get_global().find_variable('test')
     # print(test.get_name(), test.value, test.typ)

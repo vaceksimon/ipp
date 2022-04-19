@@ -1,21 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <program language="IPPcode22">
-    <instruction order="9" opcode="RETURN">
-    </instruction>
     <instruction order="5" opcode="DEFVAR">
         <arg1 type="var">GF@test</arg1>
     </instruction>
     <instruction order="7" opcode="MOVE">
         <arg1 type="var">GF@test</arg1>
-        <arg2 type="string">test#test</arg2>
+        <arg2 type="string">\032\n</arg2>
     </instruction>
-    <instruction order="6" opcode="CALL">
-        <arg1 type="label">_1hop</arg1>
-    </instruction>
-    <instruction order="8" opcode="LABEL">
-        <arg1 type="label">_1hop</arg1>
-    </instruction>
-    <instruction order="0" opcode="LABEL">
-        <arg1 type="label">hop</arg1>
+    <instruction order="20" opcode="WRITE">
+        <arg1 type="var">GF@test</arg1>
     </instruction>
 </program>
