@@ -1,7 +1,7 @@
-#Principles of Programming Languages Project
+# Principles of Programming Languages Project
 Author: Šimon Vacek
 
-This project is composed into 2 parts. The first one is a parser written in PHP, which takes a 3 address code
+This project is split into 2 parts. The first one is a parser written in PHP, which takes a 3 address code
 in IPPcode22 as an input, performs lexical and syntax check and stores the output as an xml file
 afterwards.
 
